@@ -218,29 +218,3 @@ class Struc2Vec:
         model = Word2Vec(self.all_paths, size=self.dimensions, window=5, min_count=0, workers=4)
         model.wv.save_word2vec_format(self.out_file)
         print("Representations created.")
-
-
-def get_embedding_list(file_path):
-    with open(file_path) as f:
-        content = f.readlines()
-    content = [i.replace('\n', '').split(' ') for i in content]
-    content = content[1:]
-    content = [i[1:] for i in content]
-    content = np.array(content, dtype=np.float32)
-
-    pca = PCA(n_components=2)
-    pca.fit(content)
-    data_pca = pca.fit_transform(content)
-
-    # kpca = KernelPCA(kernel="rbf", fit_inverse_transform=True, gamma=10, )  # 核PCA降维
-    # kpca.fit(content)
-    # data_pca = kpca.fit_transform(content)
-
-    print('[')
-    for i in data_pca:
-        print('[', end='')
-        for j in i:
-            print(j, end=',')
-        print(']', end=',\n')
-    print(']')
-

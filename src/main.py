@@ -5,6 +5,7 @@ import os
 import time
 
 from struc2vec import *
+from show import *
 
 if __name__ == '__main__':
     t1 = time.time()
@@ -21,6 +22,16 @@ if __name__ == '__main__':
     #               diameter=parameters.diameter, dimensions=parameters.dimensions, walk_length=parameters.walk_length,
     #               num_walks=parameters.num_walks, out_file=parameters.output, reset=parameters.reset)
     # s.get_embedding()
-    get_embedding_list(out_file)
     t2 = time.time()
     print('Total use time: %fs' % (t2 - t1))
+
+    class_key = {
+        0: 'A', 1: 'A', 2: 'A', 3: 'A', 4: 'A', 5: 'A', 6: 'A', 7: 'A', 8: 'A', 9: 'A', 10: 'B', 11: 'C', 12: 'D',
+        13: 'E', 14: 'F', 15: 'G', 16: 'G', 17: 'F', 18: 'E', 19: 'D', 20: 'C', 21: 'B', 22: 'A', 23: 'A',
+        24: 'A', 25: 'A', 26: 'A', 27: 'A', 28: 'A', 29: 'A'
+    }
+
+    shower = Show(in_file=out_file)
+    shower.get_vector()
+    shower.get_pca()
+    shower.show(class_key=class_key, title='barbell', image_name='images/barbell.png')
