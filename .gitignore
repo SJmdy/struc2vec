@@ -2,3 +2,4 @@
 TestFunc.edgelist
 *.ipynb
 TestFunc.ipynb
+/src/__pycache__

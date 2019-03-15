@@ -2,13 +2,14 @@ import networkx as nx
 import numpy as np
 from gensim.models import Word2Vec
 from sklearn.decomposition import PCA, KernelPCA
+import torch
 
 from graph import *
 
 
 class Struc2Vec:
     def __init__(self, in_file: str, directed: bool, weighted: bool, diameter: int, dimensions: int,
-                 walk_length: int, num_walks: int, out_file: str, reset: bool):
+                 walk_length: int, num_walks: int, out_file: str, reset: bool, device):
         self.diameter = diameter
         self.dimensions = dimensions
         self.walk_length = walk_length
@@ -16,6 +17,7 @@ class Struc2Vec:
         self.in_file = in_file
         self.out_file = out_file
         self.reset = reset
+        self.device = device
 
         self.G = Graph(file_path=in_file, directed=directed, weighted=weighted, diameter=diameter, reset=reset)
         self.k_nbrs = self.G.k_nbrs
@@ -26,15 +28,15 @@ class Struc2Vec:
         self.nodes_number = len(self.nodes)
         self.edges_number = len(self.G.G.edges)
 
-        self.fk_uv = np.zeros(shape=[diameter, self.nodes_number, self.nodes_number])
-        self.wk_uv = np.zeros(shape=[diameter, self.nodes_number, self.nodes_number])
+        self.fk_uv = torch.zeros(size=[diameter, self.nodes_number, self.nodes_number]).cuda(device)
+        self.wk_uv = torch.zeros(size=[diameter, self.nodes_number, self.nodes_number]).cuda(device)
 
-        self.wku = np.zeros(shape=[diameter, self.nodes_number, 2])
-        self.wk_average = np.zeros(shape=[diameter])
-        self.tku = np.zeros(shape=[diameter, self.nodes_number])
-        self.zku = np.zeros(shape=[diameter, self.nodes_number])
-        self.pk_uv = np.zeros(shape=[diameter, self.nodes_number, self.nodes_number])
-        self.pku = np.zeros(shape=[diameter, self.nodes_number, 2])
+        self.wku = torch.zeros(size=[diameter, self.nodes_number, 2]).cuda(device)
+        self.wk_average = torch.zeros(size=[diameter]).cuda(device)
+        self.tku = torch.zeros(size=[diameter, self.nodes_number]).cuda(device)
+        self.zku = torch.zeros(size=[diameter, self.nodes_number]).cuda(device)
+        self.pk_uv = torch.zeros(size=[diameter, self.nodes_number, self.nodes_number]).cuda(device)
+        self.pku = torch.zeros(size=[diameter, self.nodes_number, 2]).cuda(device)
 
         self.all_paths = []
 
@@ -74,7 +76,7 @@ class Struc2Vec:
         print('get fk_uv finish...')
 
     def get_wk_uv(self):
-        self.wk_uv = np.exp(-1 * self.fk_uv)
+        self.wk_uv = torch.exp(-1 * self.fk_uv)
 
     def get_wk_average(self):
         print('get wk_average start...')
@@ -86,14 +88,14 @@ class Struc2Vec:
     def get_tku(self):
         for k in range(0, self.diameter):
             for u in self.nodes:
-                self.tku[k][u] = np.size(self.wk_uv[k][u][self.wk_uv[k][u] > self.wk_average[k]])
+                self.tku[k][u] = self.wk_uv[k][u][self.wk_uv[k][u] > self.wk_average[k]].numel()
 
     def get_wku(self):
         for k in range(0, self.diameter):
             for u in self.nodes:
                 # wku[k][u][0]: w(uk, uk+1)
                 # wku[k][u][1]: w(uk, uk-1)
-                self.wku[k][u][0] = np.log10(self.tku[k][u] + np.e)
+                self.wku[k][u][0] = torch.log10(self.tku[k][u] + np.e)
                 self.wku[k][u][1] = 1
 
     def get_zku(self):
@@ -110,8 +112,8 @@ class Struc2Vec:
             for u in self.nodes:
                 for v in self.nodes:
                     self.pk_uv[k][u][v] = self.wk_uv[k][u][v] / self.zku[k][u]
-                    if self.zku[k][u] == 0:
-                        print(self.pk_uv[k][u][v])
+                    # if self.zku[k][u] == 0:
+                    #     print(self.pk_uv[k][u][v])
         print('get pk uv finish...')
 
     def get_pku(self):
